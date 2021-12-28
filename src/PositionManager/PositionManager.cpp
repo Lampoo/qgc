@@ -45,7 +45,7 @@ void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
 
    if (!_defaultSource) {
        //-- Otherwise, create a default one
-#if 0
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
        // Calling this can end up falling through a path which tries to instantiate a serialnmea source.
        // The Qt code for this will pop a qWarning if there are no serial ports available. This in turn
        // causes you to be unable to run with QT_FATAL_WARNINGS=1 to debug stuff.
