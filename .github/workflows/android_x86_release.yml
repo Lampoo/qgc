@@ -41,6 +41,7 @@ jobs:
           version:      ${{ env.QT_VERSION }}
           host:         linux
           target:       android
+          arch:         android_x86
           dir:          ${{ runner.temp }}
           modules:      qtcharts
           setup-python: true
@@ -97,7 +98,7 @@ jobs:
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run:  |
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="armeabi-v7a"
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="x86"
             make -j2
 
       - name: ccache post-run
