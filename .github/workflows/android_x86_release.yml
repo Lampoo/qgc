@@ -78,7 +78,7 @@ jobs:
       - name:               Install gstreamer
         working-directory:  ${{ github.workspace }}
         run: |
-            wget --quiet https://${S3_BUCKET_CI}.${S3_REGION}.amazonaws.com/CI/datapilot/gstreamer-1.0-android-universal-${GSTREAMER_VERSION}.tar.bz2
+            wget https://${S3_BUCKET_CI}.${S3_REGION}.amazonaws.com/CI/datapilot/gstreamer-1.0-android-universal-${GSTREAMER_VERSION}.tar.bz2
             mkdir gstreamer-1.0-android-universal-${GSTREAMER_VERSION}
             tar jxf gstreamer-1.0-android-universal-${GSTREAMER_VERSION}.tar.bz2 -C gstreamer-1.0-android-universal-${GSTREAMER_VERSION}
 
