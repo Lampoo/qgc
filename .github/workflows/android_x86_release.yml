@@ -1,16 +1,11 @@
 # The 32 and 64 bit version of these actions should be kept in sync
-name: Android 32-bit Release
+name: Android x86 Release
 
 on:
   push:
-    branches:
-      - 'master'
-      - 'Stable*'
-    tags:
-      - 'v*'
+    branches: StableV4.2_qt_5_12_10
   pull_request:
-    branches:
-    - '*'
+    branches: StableV4.2_qt_5_12_10
 
 defaults:
   run:
@@ -18,9 +13,12 @@ defaults:
 
 env:
   SOURCE_DIR:   ${{ github.workspace }}
-  QT_VERSION:   5.15.2
+  QT_VERSION:   5.12.10
   ARTIFACT:     QGroundControl32.apk
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
+  S3_BUCKET_CI: 2c70f0f0fa-1d5f-fbbd-e789-ead53fd00456
+  S3_REGION:    eu-central-1
+  GSTREAMER_VERSION: 1.16.1
 
 jobs:
   build:
@@ -79,9 +77,9 @@ jobs:
       - name:               Install gstreamer
         working-directory:  ${{ github.workspace }}
         run: |
-            wget --quiet https://gstreamer.freedesktop.org/data/pkg/android/1.18.5/gstreamer-1.0-android-universal-1.18.5.tar.xz
-            mkdir gstreamer-1.0-android-universal-1.18.5
-            tar xf gstreamer-1.0-android-universal-1.18.5.tar.xz -C gstreamer-1.0-android-universal-1.18.5
+            wget --quiet https://${S3_BUCKET_CI}.${S3_REGION}.amazonaws.com/CI/datapilot/gstreamer-1.0-android-universal-${GSTREAMER_VERSION}.tar.bz2
+            mkdir gstreamer-1.0-android-universal-${GSTREAMER_VERSION}
+            tar jxf gstreamer-1.0-android-universal-${GSTREAMER_VERSION}.tar.bz2 -C gstreamer-1.0-android-universal-${GSTREAMER_VERSION}
 
       # This will set GIT_BRANCH_NAME environment variable
       - name: Git branch name
@@ -111,18 +109,18 @@ jobs:
           name: ${{ env.ARTIFACT }}
           path: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
 
-      - name: Upload build to S3 Bucket
-        if:                 github.event_name == 'push'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${ARTIFACT} s3://qgroundcontrol/builds/${GIT_BRANCH_NAME}/${ARTIFACT} --region us-west-2 --acl public-read
+      #- name: Upload build to S3 Bucket
+      #  if:                 github.event_name == 'push'
+      #  working-directory:  ${{ runner.temp }}/shadow_build_dir/package
+      #  run: |
+      #        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #        aws s3 cp ${ARTIFACT} s3://qgroundcontrol/builds/${GIT_BRANCH_NAME}/${ARTIFACT} --region us-west-2 --acl public-read
 
-      - name: Upload tagged stable build to S3 latest Bucket
-        if:                 github.event_name == 'push' && github.ref_type == 'tag'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${ARTIFACT} s3://qgroundcontrol/latest/${ARTIFACT} --region us-west-2 --acl public-read
+      #- name: Upload tagged stable build to S3 latest Bucket
+      #  if:                 github.event_name == 'push' && github.ref_type == 'tag'
+      #  working-directory:  ${{ runner.temp }}/shadow_build_dir/package
+      #  run: |
+      #        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #        aws s3 cp ${ARTIFACT} s3://qgroundcontrol/latest/${ARTIFACT} --region us-west-2 --acl public-read
