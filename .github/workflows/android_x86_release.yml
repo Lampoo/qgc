@@ -3,9 +3,9 @@ name: Android x86 Release
 
 on:
   push:
-    branches: StableV4.2_qt_5_12_10
+    branches: Stable_V4.2_qt_5_12_10
   pull_request:
-    branches: StableV4.2_qt_5_12_10
+    branches: Stable_V4.2_qt_5_12_10
 
 defaults:
   run:
@@ -16,7 +16,7 @@ env:
   QT_VERSION:   5.12.10
   ARTIFACT:     QGroundControl32.apk
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
-  S3_BUCKET_CI: 2c70f0f0fa-1d5f-fbbd-e789-ead53fd00456
+  S3_BUCKET_CI: 2c70f0fa-1d5f-fbbd-e789-ead53fd00456
   S3_REGION:    eu-central-1
   GSTREAMER_VERSION: 1.16.1
 
