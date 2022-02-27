@@ -123,7 +123,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          path: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
+          args: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
 
       #- name: Upload build to S3 Bucket
       #  if:                 github.event_name == 'push'
