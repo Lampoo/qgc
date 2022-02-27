@@ -119,11 +119,10 @@ jobs:
 
       - name: Upload APK
         if: github.event_name == 'release'
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: AButler/upload-release-assets@v2.0
         with:
-          args: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
+          files: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       #- name: Upload build to S3 Bucket
       #  if:                 github.event_name == 'push'
