@@ -6,6 +6,8 @@ on:
     branches: Stable_V4.2_qt_5_12_10
   pull_request:
     branches: Stable_V4.2_qt_5_12_10
+  release:
+    types: created
 
 defaults:
   run:
@@ -108,6 +110,14 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{ env.ARTIFACT }}
+          path: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
+
+      - name: Upload APK
+        if: github.event_name == 'release'
+        uses: skx/github-action-publish-binaries@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
           path: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
 
       #- name: Upload build to S3 Bucket
