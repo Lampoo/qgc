@@ -32,15 +32,16 @@ QGC_LOGGING_CATEGORY(MockLinkVerboseLog, "MockLinkVerboseLog")
 // Vehicle position is set close to default Gazebo vehicle location. This allows for multi-vehicle
 // testing of a gazebo vehicle and a mocklink vehicle
 #if 1
-double      MockLink::_defaultVehicleLatitude =     47.397;
-double      MockLink::_defaultVehicleLongitude =    8.5455;
-double      MockLink::_defaultVehicleAltitude =     488.056;
+// Location from GoogleMap: 35.63997524698799, 139.86219415456247
+double      MockLink::_defaultVehicleLatitude =     35.63997524698799;
+double      MockLink::_defaultVehicleLongitude =    139.86219415456247;
+double      MockLink::_defaultVehicleAltitude =     6.0;
 #else
 double      MockLink::_defaultVehicleLatitude =     47.6333022928789;
 double      MockLink::_defaultVehicleLongitude =    -122.08833157994995;
 double      MockLink::_defaultVehicleAltitude =     19.0;
 #endif
-int         MockLink::_nextVehicleSystemId =        128;
+int         MockLink::_nextVehicleSystemId =        1; //128
 const char* MockLink::_failParam =                  "COM_FLTMODE6";
 
 const char* MockConfiguration::_firmwareTypeKey         = "FirmwareType";
@@ -61,6 +62,7 @@ static_assert(LinkManager::invalidMavlinkChannel() == std::numeric_limits<uint8_
 
 MockLink::MockLink(SharedLinkConfigurationPtr& config)
     : LinkInterface                         (config)
+    , _socket                               (nullptr)
     , _missionItemHandler                   (this, qgcApp()->toolbox()->mavlinkProtocol())
     , _name                                 ("MockLink")
     , _connected                            (false)
@@ -194,7 +196,39 @@ void MockLink::disconnect(void)
     }
 }
 
+void MockLink::_socketReadyRead()
+{
+    QByteArray databuffer;
+    while (_socket->hasPendingDatagrams()) {
+        QByteArray datagram;
+        datagram.resize(_socket->pendingDatagramSize());
+        QHostAddress sender;
+        quint16 senderPort;
+        _socket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
+        databuffer.append(datagram);
+    }
+    if (databuffer.size()) {
+        emit writeBytesQueuedSignal(databuffer);
+    }
+}
+
+bool MockLink::_hardwareConnect()
+{
+    _socket = new QUdpSocket(this);
+    _socket->setProxy(QNetworkProxy::NoProxy);
+    QObject::connect(_socket, SIGNAL(readyRead()), this, SLOT(_socketReadyRead()), Qt::DirectConnection);
+    QObject::connect(this, SIGNAL(finished()), _socket, SLOT(deleteLater()), Qt::DirectConnection);
+    return true;
+}
+
 void MockLink::run(void)
+{
+    if (_hardwareConnect()) {
+        _run();
+    }
+}
+
+void MockLink::_run(void)
 {
     QTimer  timer1HzTasks;
     QTimer  timer10HzTasks;
@@ -368,7 +402,7 @@ void MockLink::_sendHeartBeat(void)
                                     mavlinkChannel(),
                                     &msg,
                                     _vehicleType,        // MAV_TYPE
-                                    _firmwareType,      // MAV_AUTOPILOT
+                                    _firmwareType,       // MAV_AUTOPILOT
                                     _mavBaseMode,        // MAV_MODE
                                     _mavCustomMode,      // custom mode
                                     _mavState);          // MAV_STATE
@@ -546,15 +580,21 @@ void MockLink::respondWithMavlinkMessage(const mavlink_message_t& msg)
 
         int cBuffer = mavlink_msg_to_send_buffer(buffer, &msg);
         QByteArray bytes((char *)buffer, cBuffer);
-        emit bytesReceived(this, bytes);
+        if (_socket != nullptr) {
+            _socket->writeDatagram(bytes.data(), bytes.size(), QHostAddress("127.0.0.1"), 14550);
+        } else {
+            emit bytesReceived(this, bytes);
+        }
     }
 }
 
 /// @brief Called when QGC wants to write bytes to the MAV
 void MockLink::_writeBytes(const QByteArray bytes)
 {
-    // This prevents the responses to mavlink messages from being sent until the _writeBytes returns.
-    emit writeBytesQueuedSignal(bytes);
+    if (_socket == nullptr) {
+        // This prevents the responses to mavlink messages from being sent until the _writeBytes returns.
+        emit writeBytesQueuedSignal(bytes);
+    }
 }
 
 void MockLink::_writeBytesQueued(const QByteArray bytes)
@@ -664,7 +704,7 @@ void MockLink::_handleIncomingMavlinkMsg(const mavlink_message_t &msg)
 void MockLink::_handleHeartBeat(const mavlink_message_t& msg)
 {
     Q_UNUSED(msg);
-    qCDebug(MockLinkLog) << "Heartbeat";
+    //qCDebug(MockLinkLog) << "Heartbeat";
 }
 
 void MockLink::_handleParamMapRC(const mavlink_message_t& msg)
